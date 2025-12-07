@@ -267,6 +267,10 @@ void MapDrawer::DrawShade(int map_z) {
 			glDisable(GL_TEXTURE_2D);
 		}
 
+		// Ensure blending is enabled for transparency
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 		float x = screensize_x * zoom;
 		float y = screensize_y * zoom;
 		glColor4ub(0, 0, 0, 128);
@@ -276,6 +280,10 @@ void MapDrawer::DrawShade(int map_z) {
 		glVertex2f(x, 0);
 		glVertex2f(0, 0);
 		glEnd();
+
+		// Optional: Disable blending if it impacts other operations, though usually harmless/required.
+		// For safety in this specific drawing routine:
+		// glDisable(GL_BLEND); 
 
 		if (!only_colors) {
 			glEnable(GL_TEXTURE_2D);

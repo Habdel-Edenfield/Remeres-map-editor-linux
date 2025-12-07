@@ -603,7 +603,8 @@ bool MainMenuBar::Load(const FileName &path, wxArrayString &warnings, wxString &
 	entries[14].Set(wxACCEL_CTRL, (int)'0', static_cast<int>(MAIN_FRAME_MENU) + static_cast<int>(MenuBar::ZOOM_NORMAL));
 	entries[15].Set(wxACCEL_NORMAL, (int)'Q', static_cast<int>(MAIN_FRAME_MENU) + static_cast<int>(MenuBar::SHOW_SHADE));
 	entries[16].Set(wxACCEL_CTRL, (int)'W', static_cast<int>(MAIN_FRAME_MENU) + static_cast<int>(MenuBar::SHOW_ALL_FLOORS));
-	entries[17].Set(wxACCEL_NORMAL, (int)'Q', static_cast<int>(MAIN_FRAME_MENU) + static_cast<int>(MenuBar::GHOST_ITEMS));
+	// User reported conflict with 'Q'. GHOST_ITEMS should not share 'Q'. Disabling shortcut for now.
+	entries[17].Set(wxACCEL_NORMAL, 0, static_cast<int>(MAIN_FRAME_MENU) + static_cast<int>(MenuBar::GHOST_ITEMS));
 	entries[18].Set(wxACCEL_CTRL, (int)'L', static_cast<int>(MAIN_FRAME_MENU) + static_cast<int>(MenuBar::GHOST_HIGHER_FLOORS));
 	entries[19].Set(wxACCEL_SHIFT, (int)'I', static_cast<int>(MAIN_FRAME_MENU) + static_cast<int>(MenuBar::SHOW_INGAME_BOX));
 	entries[20].Set(wxACCEL_SHIFT, (int)'L', static_cast<int>(MAIN_FRAME_MENU) + static_cast<int>(MenuBar::SHOW_LIGHTS));
