@@ -1790,12 +1790,10 @@ void MapCanvas::OnMousePropertiesRelease(wxMouseEvent &event) {
 
 		// Only reopen menu if RIGHT-CLICK dismissed it (not left-click)
 		if (dismiss_filter->WasRightClick()) {
-			// Defer canvas update to after menu reopens (avoid event queue congestion)
-			CallAfter([this]() {
-				popup_menu->Update();
-				PopupMenu(popup_menu);
-				Update();
-			});
+			// v3.9.16 perf: Call synchronously to eliminate CallAfter() overhead (~50-200ms)
+			popup_menu->Update();
+			PopupMenu(popup_menu);
+			// Note: g_gui.RefreshView() at line 1817 handles canvas update
 		} else {
 			// Left-click dismiss - update canvas immediately
 			Update();
