@@ -40,13 +40,6 @@
 	#pragma warning(disable : 4018) // signed/unsigned mismatch
 #endif
 
-// Helper function to ensure button text visibility in GTK3 dark themes
-inline void EnsureButtonTextVisible(wxButton* button) {
-#ifdef __WXGTK__
-	button->SetForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT));
-#endif
-}
-
 // ============================================================================
 // Map Properties Window
 
@@ -156,13 +149,11 @@ MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor 
 
 	topsizer->Add(grid_sizer, wxSizerFlags(1).Expand().Border(wxALL, 20));
 
-	wxSizer* subsizer = newd wxBoxSizer(wxHORIZONTAL);
-	wxButton* ok_btn = newd wxButton(this, wxID_OK, "OK");
-	wxButton* cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel");
-	EnsureButtonTextVisible(ok_btn);
-	EnsureButtonTextVisible(cancel_btn);
-	subsizer->Add(ok_btn, wxSizerFlags(1).Center());
-	subsizer->Add(cancel_btn, wxSizerFlags(1).Center());
+	// OK/Cancel buttons using wxStdDialogButtonSizer (fixes GTK3 dark theme visibility)
+	wxStdDialogButtonSizer* subsizer = newd wxStdDialogButtonSizer();
+	subsizer->AddButton(newd wxButton(this, wxID_OK));
+	subsizer->AddButton(newd wxButton(this, wxID_CANCEL));
+	subsizer->Realize();
 	topsizer->Add(subsizer, wxSizerFlags(0).Center().Border(wxLEFT | wxRIGHT | wxBOTTOM, 20));
 
 	SetSizerAndFit(topsizer);
@@ -437,15 +428,12 @@ ImportMapWindow::ImportMapWindow(wxWindow* parent, Editor &editor) :
 	tmpsizer->Add(spawn_npc_options, 0, wxALL | wxEXPAND, 5);
 	sizer->Add(tmpsizer, 1, wxEXPAND | wxLEFT | wxRIGHT, 5);
 
-	// OK/Cancel buttons
-	wxBoxSizer* buttons = newd wxBoxSizer(wxHORIZONTAL);
-	wxButton* ok_btn = newd wxButton(this, wxID_OK, "Ok");
-	wxButton* cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel");
-	EnsureButtonTextVisible(ok_btn);
-	EnsureButtonTextVisible(cancel_btn);
-	buttons->Add(ok_btn, 0, wxALL, 5);
-	buttons->Add(cancel_btn, 0, wxALL, 5);
-	sizer->Add(buttons, wxSizerFlags(1).Center());
+	// OK/Cancel buttons using wxStdDialogButtonSizer (fixes GTK3 dark theme visibility)
+	wxStdDialogButtonSizer* buttons = newd wxStdDialogButtonSizer();
+	buttons->AddButton(newd wxButton(this, wxID_OK));
+	buttons->AddButton(newd wxButton(this, wxID_CANCEL));
+	buttons->Realize();
+	sizer->Add(buttons, 0, wxALL | wxALIGN_CENTER, 5);
 
 	SetSizer(sizer);
 	Layout();
@@ -600,15 +588,13 @@ ExportMiniMapWindow::ExportMiniMapWindow(wxWindow* parent, Editor &editor) :
 	tmpsizer->Add(floor_number, 0, wxALL, 5);
 	sizer->Add(tmpsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
 
-	// OK/Cancel buttons
-	tmpsizer = newd wxBoxSizer(wxHORIZONTAL);
-	ok_button = newd wxButton(this, wxID_OK, "OK");
-	wxButton* cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel");
-	EnsureButtonTextVisible(ok_button);
-	EnsureButtonTextVisible(cancel_btn);
-	tmpsizer->Add(ok_button, wxSizerFlags(1).Center());
-	tmpsizer->Add(cancel_btn, wxSizerFlags(1).Center());
-	sizer->Add(tmpsizer, 0, wxCENTER, 10);
+	// OK/Cancel buttons using wxStdDialogButtonSizer (fixes GTK3 dark theme visibility)
+	wxStdDialogButtonSizer* button_sizer = newd wxStdDialogButtonSizer();
+	ok_button = newd wxButton(this, wxID_OK);
+	button_sizer->AddButton(ok_button);
+	button_sizer->AddButton(newd wxButton(this, wxID_CANCEL));
+	button_sizer->Realize();
+	sizer->Add(button_sizer, 0, wxCENTER, 10);
 
 	SetSizer(sizer);
 	Layout();
@@ -744,15 +730,13 @@ ExportTilesetsWindow::ExportTilesetsWindow(wxWindow* parent, Editor &editor) :
 	tmpsizer->Add(file_name_text_field, 1, wxALL, 5);
 	sizer->Add(tmpsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 5);
 
-	// OK/Cancel buttons
-	tmpsizer = newd wxBoxSizer(wxHORIZONTAL);
-	ok_button = newd wxButton(this, wxID_OK, "OK");
-	wxButton* cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel");
-	EnsureButtonTextVisible(ok_button);
-	EnsureButtonTextVisible(cancel_btn);
-	tmpsizer->Add(ok_button, wxSizerFlags(1).Center());
-	tmpsizer->Add(cancel_btn, wxSizerFlags(1).Center());
-	sizer->Add(tmpsizer, 0, wxCENTER, 10);
+	// OK/Cancel buttons using wxStdDialogButtonSizer (fixes GTK3 dark theme visibility)
+	wxStdDialogButtonSizer* button_sizer = newd wxStdDialogButtonSizer();
+	ok_button = newd wxButton(this, wxID_OK);
+	button_sizer->AddButton(ok_button);
+	button_sizer->AddButton(newd wxButton(this, wxID_CANCEL));
+	button_sizer->Realize();
+	sizer->Add(button_sizer, 0, wxCENTER, 10);
 
 	SetSizer(sizer);
 	Layout();
@@ -941,13 +925,11 @@ FindDialog::FindDialog(wxWindow* parent, wxString title) :
 	item_list->SetMinSize(wxSize(470, 400));
 	sizer->Add(item_list, wxSizerFlags(1).Expand().Border());
 
-	wxSizer* stdsizer = newd wxBoxSizer(wxHORIZONTAL);
-	wxButton* ok_btn = newd wxButton(this, wxID_OK, "OK");
-	wxButton* cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel");
-	EnsureButtonTextVisible(ok_btn);
-	EnsureButtonTextVisible(cancel_btn);
-	stdsizer->Add(ok_btn, wxSizerFlags(1).Center());
-	stdsizer->Add(cancel_btn, wxSizerFlags(1).Center());
+	// OK/Cancel buttons using wxStdDialogButtonSizer (fixes GTK3 dark theme visibility)
+	wxStdDialogButtonSizer* stdsizer = newd wxStdDialogButtonSizer();
+	stdsizer->AddButton(newd wxButton(this, wxID_OK));
+	stdsizer->AddButton(newd wxButton(this, wxID_CANCEL));
+	stdsizer->Realize();
 	sizer->Add(stdsizer, wxSizerFlags(0).Center().Border());
 
 	SetSizerAndFit(sizer);
@@ -1467,15 +1449,12 @@ EditTownsDialog::EditTownsDialog(wxWindow* parent, Editor &editor) :
 	temple_position->Add(select_position_button, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
 	sizer->Add(temple_position, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
 
-	// OK/Cancel buttons
-	tmpsizer = newd wxBoxSizer(wxHORIZONTAL);
-	wxButton* ok_btn = newd wxButton(this, wxID_OK, "OK");
-	wxButton* cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel");
-	EnsureButtonTextVisible(ok_btn);
-	EnsureButtonTextVisible(cancel_btn);
-	tmpsizer->Add(ok_btn, wxSizerFlags(1).Center());
-	tmpsizer->Add(cancel_btn, wxSizerFlags(1).Center());
-	sizer->Add(tmpsizer, 0, wxCENTER | wxALL, 10);
+	// OK/Cancel buttons using wxStdDialogButtonSizer (fixes GTK3 dark theme visibility)
+	wxStdDialogButtonSizer* button_sizer2 = newd wxStdDialogButtonSizer();
+	button_sizer2->AddButton(newd wxButton(this, wxID_OK));
+	button_sizer2->AddButton(newd wxButton(this, wxID_CANCEL));
+	button_sizer2->Realize();
+	sizer->Add(button_sizer2, 0, wxCENTER | wxALL, 10);
 
 	SetSizerAndFit(sizer);
 	Centre(wxBOTH);
@@ -1745,15 +1724,12 @@ GotoPositionDialog::GotoPositionDialog(wxWindow* parent, Editor &editor) :
 	posctrl = newd PositionCtrl(this, "Destination", map.getWidth() / 2, map.getHeight() / 2, rme::MapGroundLayer, map.getWidth(), map.getHeight());
 	sizer->Add(posctrl, 0, wxTOP | wxLEFT | wxRIGHT, 20);
 
-	// OK/Cancel buttons
-	wxSizer* tmpsizer = newd wxBoxSizer(wxHORIZONTAL);
-	wxButton* ok_btn = newd wxButton(this, wxID_OK, "OK");
-	wxButton* cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel");
-	EnsureButtonTextVisible(ok_btn);
-	EnsureButtonTextVisible(cancel_btn);
-	tmpsizer->Add(ok_btn, wxSizerFlags(1).Center());
-	tmpsizer->Add(cancel_btn, wxSizerFlags(1).Center());
-	sizer->Add(tmpsizer, 0, wxALL | wxCENTER, 20); // Border to top too
+	// OK/Cancel buttons using wxStdDialogButtonSizer (fixes GTK3 dark theme visibility)
+	wxStdDialogButtonSizer* dlg_buttons = newd wxStdDialogButtonSizer();
+	dlg_buttons->AddButton(newd wxButton(this, wxID_OK));
+	dlg_buttons->AddButton(newd wxButton(this, wxID_CANCEL));
+	dlg_buttons->Realize();
+	sizer->Add(dlg_buttons, 0, wxALL | wxCENTER, 20); // Border to top too
 
 	SetSizerAndFit(sizer);
 	Centre(wxBOTH);
