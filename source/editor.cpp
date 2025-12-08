@@ -636,6 +636,7 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 					if (imported_tile) {
 						ASSERT(imported_tile->spawnMonster);
 						spawn_monster_map[newSpawnMonsterPos] = imported_tile->spawnMonster;
+						imported_tile->spawnMonster = nullptr; // Prevent double-free when imported_map destructs
 
 						SpawnNpcPositionList::iterator next = siter;
 						bool cont = true;
@@ -678,6 +679,7 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 					if (importedTile) {
 						ASSERT(importedTile->spawnNpc);
 						spawn_npc_map[newSpawnNpcPos] = importedTile->spawnNpc;
+						importedTile->spawnNpc = nullptr; // Prevent double-free when imported_map destructs
 
 						SpawnNpcPositionList::iterator next = siter;
 						bool cont = true;
@@ -735,7 +737,12 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 				continue;
 			} else {
 				resize_asked = true;
+				// Fix: Destroy progress bar before showing modal dialog to prevent GTK event loop deadlock
+				g_gui.DestroyLoadBar();
 				int ret = g_gui.PopupDialog("Collision", "The imported tiles are outside the current map scope. Do you want to resize the map? (Else additional tiles will be removed)", wxYES | wxNO);
+				// Recreate progress bar after dialog closes
+				g_gui.CreateLoadBar("Merging maps...");
+				g_gui.SetLoadDone(int(100.0 * tiles_merged / tiles_to_import));
 
 				if (ret == wxID_YES) {
 					// ...
@@ -782,12 +789,31 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 		if (old_tile) {
 			map.removeSpawnMonster(old_tile);
 		}
+		// Delete spawns if not imported (IMPORT_DONT), prevents memory leak
+		// When IMPORT_DONT, spawns were not transferred to spawn_monster_map (lines 628-665)
+		// so we must delete them before nulling the pointers
+		if (spawn_import_type == IMPORT_DONT && import_tile->spawnMonster) {
+			delete import_tile->spawnMonster;
+		}
 		import_tile->spawnMonster = nullptr;
+		if (spawn_npc_import_type == IMPORT_DONT && import_tile->spawnNpc) {
+			delete import_tile->spawnNpc;
+		}
+		import_tile->spawnNpc = nullptr;
 
 		map.setTile(new_pos, import_tile, true);
 	}
 
+	// Process monster spawns with progress updates to keep UI responsive
+	uint64_t spawns_processed = 0;
+	uint64_t total_monster_spawns = spawn_monster_map.size();
 	for (std::map<Position, SpawnMonster*>::iterator spawn_monster_iter = spawn_monster_map.begin(); spawn_monster_iter != spawn_monster_map.end(); ++spawn_monster_iter) {
+		// Update progress periodically (every 100 spawns or at completion)
+		if (spawns_processed % 100 == 0 || spawns_processed == total_monster_spawns - 1) {
+			g_gui.SetLoadDone(99); // Keep at 99% during final spawn processing
+		}
+		++spawns_processed;
+
 		Position pos = spawn_monster_iter->first;
 		TileLocation* location = map.createTileL(pos);
 		Tile* tile = location->get();
@@ -803,7 +829,16 @@ bool Editor::importMap(FileName filename, int import_x_offset, int import_y_offs
 		map.addSpawnMonster(tile);
 	}
 
+	// Process NPC spawns with progress updates to keep UI responsive
+	spawns_processed = 0;
+	uint64_t total_npc_spawns = spawn_npc_map.size();
 	for (std::map<Position, SpawnNpc*>::iterator spawn_npc_iter = spawn_npc_map.begin(); spawn_npc_iter != spawn_npc_map.end(); ++spawn_npc_iter) {
+		// Update progress periodically (every 100 spawns or at completion)
+		if (spawns_processed % 100 == 0 || spawns_processed == total_npc_spawns - 1) {
+			g_gui.SetLoadDone(99); // Keep at 99% during final spawn processing
+		}
+		++spawns_processed;
+
 		Position pos = spawn_npc_iter->first;
 		TileLocation* location = map.createTileL(pos);
 		Tile* tile = location->get();

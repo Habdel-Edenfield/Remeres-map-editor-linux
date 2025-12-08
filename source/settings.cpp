@@ -284,7 +284,7 @@ void Settings::IO(IOMode mode) {
 	Int(SOFTWARE_CLEAN_THRESHOLD, 1800);
 	Int(SOFTWARE_CLEAN_SIZE, 500);
 	Int(ICON_BACKGROUND, 0);
-	Int(HARD_REFRESH_RATE, 16); // 60 FPS target (was 200ms)
+	Int(HARD_REFRESH_RATE, 16); // Throttle Update() to 16ms intervals (NOT a frame rate cap - see ARCHITECTURE.md)
 	Int(HIDE_ITEMS_WHEN_ZOOMED, 1);
 	String(SCREENSHOT_DIRECTORY, "");
 	String(SCREENSHOT_FORMAT, "png");

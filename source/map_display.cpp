@@ -175,12 +175,15 @@ void MapCanvas::Refresh() {
 		render_pending = true;
 		return;
 	}
-	
+
+	// HARD_REFRESH_RATE throttles Update() only (immediate paint), NOT Refresh() (queued paint)
+	// This prevents GPU stalls from rapid Update() calls, but allows event queue to handle batching
+	// Note: Refresh() is ALWAYS called below regardless of throttle
 	if (refresh_watch.Time() > g_settings.getInteger(Config::HARD_REFRESH_RATE)) {
 		refresh_watch.Start();
-		wxGLCanvas::Update();
+		wxGLCanvas::Update();  // Force immediate paint if throttle period elapsed
 	}
-	wxGLCanvas::Refresh();
+	wxGLCanvas::Refresh();  // Always queue paint event (subject to event compression above)
 }
 
 void MapCanvas::SetZoom(double value) {
@@ -311,24 +314,25 @@ void MapCanvas::OnPaint(wxPaintEvent &event) {
 	editor.SendNodeRequests();
 
 #ifdef __LINUX__
-	// === FPS Counter (StatusBar-based for stability) ===
+	// === Redraw Counter (StatusBar-based for stability) ===
+	// Measures OnPaint() frequency, not visual frame rate (event-driven architecture)
 	static int frame_count = 0;
 	static auto last_fps_time = std::chrono::high_resolution_clock::now();
 	static int current_fps = 0;
-	
+
 	frame_count++;
 	auto now = std::chrono::high_resolution_clock::now();
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_fps_time).count();
-	
+
 	if (elapsed >= 1000) {
 		current_fps = frame_count;
 		frame_count = 0;
 		last_fps_time = now;
-		
-		// Update StatusBar slot 4 with FPS and texture binds (stable, doesn't touch title)
+
+		// Update StatusBar slot 4 with redraws and texture binds (stable, doesn't touch title)
 		if (g_gui.root) {
 			int texBinds = GetTextureBindsLastFrame();
-			wxString telemetry = wxString::Format("FPS:%d Binds:%d", current_fps, texBinds);
+			wxString telemetry = wxString::Format("Redraws:%d Binds:%d", current_fps, texBinds);
 			g_gui.root->SetStatusText(telemetry, 4);
 		}
 	}
@@ -2995,6 +2999,11 @@ bool MapCanvas::floodFill(Map* map, const Position &center, int x, int y, Ground
 
 // ============================================================================
 // AnimationTimer
+//
+// Provides baseline refresh for animations/previews without continuous render loop.
+// Only active when show_preview enabled OR position_indicator visible.
+// Interval: 100ms (10 Hz max) - chosen to balance animation smoothness with efficiency.
+// Note: Visual presentation still 60 Hz (VSync enforced), this just ensures periodic redraws.
 
 AnimationTimer::AnimationTimer(MapCanvas* canvas) :
 	wxTimer(),
@@ -3004,15 +3013,16 @@ AnimationTimer::AnimationTimer(MapCanvas* canvas) :
 	};
 
 void AnimationTimer::Notify() {
+	// Only refresh at lower zoom levels (high zoom = many tiles, expensive renders)
 	if (map_canvas->GetZoom() <= 2.0) {
-		map_canvas->Refresh();
+		map_canvas->Refresh();  // Subject to event compression if render in progress
 	}
 }
 
 void AnimationTimer::Start() {
 	if (!started) {
 		started = true;
-		wxTimer::Start(100);
+		wxTimer::Start(100);  // 100ms interval = 10 Hz baseline (event-driven, not continuous loop)
 	}
 };
 
