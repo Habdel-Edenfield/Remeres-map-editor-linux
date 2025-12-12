@@ -160,8 +160,12 @@ target_sources(${PROJECT_NAME}
 	map.cpp
 	map_display.cpp
 	map_drawer.cpp
+	map_generator.cpp
+	procedural_map_dialog.cpp
+	simplex_noise.cpp
 	map_region.cpp
 	map_tab.cpp
+	map_summary_window.cpp
 	map_window.cpp
 	materials.cpp
 	minimap_window.cpp

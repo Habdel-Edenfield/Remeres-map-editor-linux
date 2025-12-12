@@ -167,6 +167,13 @@ namespace MenuBar {
 		REMOVE_ON_SELECTION_DUPLICATED_ITEMS,
 		SEARCH_ON_MAP_WALLS_UPON_WALLS,
 		SEARCH_ON_SELECTION_WALLS_UPON_WALLS,
+		// Idler Menu
+		MAP_SUMMARIZE,
+		DOODADS_FILLING_TOOL,
+		EDIT_ITEMS_OTB,
+		MONSTER_MAKER,
+		CHAT_REGISTER,
+		CHAT_CONNECT,
 	};
 }
 
@@ -311,6 +318,14 @@ public:
 	void OnRemoveForDuplicateItemsOnSelection(wxCommandEvent &event);
 	void OnSearchForWallsUponWallsOnMap(wxCommandEvent &event);
 	void OnSearchForWallsUponWallsOnSelection(wxCommandEvent &event);
+
+	// Idler Menu
+	void OnMapSummarize(wxCommandEvent &event);
+	void OnDoodadsFillingTool(wxCommandEvent &event);
+	void OnEditItemsOTB(wxCommandEvent &event);
+	void OnMonsterMaker(wxCommandEvent &event);
+	void OnChatRegister(wxCommandEvent &event);
+	void OnChatConnect(wxCommandEvent &event);
 
 protected:
 	// Load and returns a menu item, also sets accelerator

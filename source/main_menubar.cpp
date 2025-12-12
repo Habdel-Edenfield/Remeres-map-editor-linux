@@ -25,6 +25,8 @@
 #include "dat_debug_view.h"
 #include "result_window.h"
 #include "find_item_window.h"
+#include "procedural_map_dialog.h"
+#include "map_summary_window.h"
 #include "settings.h"
 
 #include "gui.h"
@@ -212,6 +214,14 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(SEARCH_ON_MAP_WALLS_UPON_WALLS, wxITEM_NORMAL, OnSearchForWallsUponWallsOnMap);
 	MAKE_ACTION(SEARCH_ON_SELECTION_WALLS_UPON_WALLS, wxITEM_NORMAL, OnSearchForWallsUponWallsOnSelection);
 
+	// Idler Menu
+	MAKE_ACTION(MAP_SUMMARIZE, wxITEM_NORMAL, OnMapSummarize);
+	MAKE_ACTION(DOODADS_FILLING_TOOL, wxITEM_NORMAL, OnDoodadsFillingTool);
+	MAKE_ACTION(EDIT_ITEMS_OTB, wxITEM_NORMAL, OnEditItemsOTB);
+	MAKE_ACTION(MONSTER_MAKER, wxITEM_NORMAL, OnMonsterMaker);
+	MAKE_ACTION(CHAT_REGISTER, wxITEM_NORMAL, OnChatRegister);
+	MAKE_ACTION(CHAT_CONNECT, wxITEM_NORMAL, OnChatConnect);
+
 	// A deleter, this way the frame does not need
 	// to bother deleting us.
 	class CustomMenuBar : public wxMenuBar {
@@ -339,7 +349,7 @@ void MainMenuBar::Update() {
 	EnableItem(CLOSE, is_local);
 	EnableItem(SAVE, is_host);
 	EnableItem(SAVE_AS, is_host);
-	EnableItem(GENERATE_MAP, false);
+	EnableItem(GENERATE_MAP, true);
 
 	EnableItem(IMPORT_MAP, is_local);
 	EnableItem(IMPORT_MONSTERS, is_local);
@@ -429,6 +439,14 @@ void MainMenuBar::Update() {
 
 	EnableItem(SEARCH_ON_MAP_WALLS_UPON_WALLS, is_host);
 	EnableItem(SEARCH_ON_SELECTION_WALLS_UPON_WALLS, is_host && has_selection);
+
+	// Idler Menu Enabling
+	EnableItem(MAP_SUMMARIZE, has_map);
+	EnableItem(DOODADS_FILLING_TOOL, has_map); // Placeholder
+	EnableItem(EDIT_ITEMS_OTB, false); // Placeholder
+	EnableItem(MONSTER_MAKER, false); // Placeholder
+	EnableItem(CHAT_REGISTER, false); // Placeholder
+	EnableItem(CHAT_CONNECT, false); // Placeholder
 
 	UpdateFloorMenu();
 	UpdateIndicatorsMenu();
@@ -581,6 +599,27 @@ bool MainMenuBar::Load(const FileName &path, wxArrayString &warnings, wxString &
 			warnings.push_back(path.GetFullName() + ": Only menus can be subitems of main menu");
 		}
 	}
+
+	// [IDLER] Inject Idler Menu explicitly
+	// [IDLER] Inject Idler Menu explicitly
+	wxMenu* idlerMenu = newd wxMenu;
+	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::MAP_SUMMARIZE), "Map Summary", "Show map item statistics", wxITEM_NORMAL);
+	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::DOODADS_FILLING_TOOL), "Doodads Filling Tool", "Open doodads filling tool", wxITEM_NORMAL);
+	idlerMenu->AppendSeparator();
+	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::EDIT_ITEMS_OTB), "Edit Items OTB", "Edit OTB item definitions", wxITEM_NORMAL);
+	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::MONSTER_MAKER), "Monster Maker", "Open monster maker", wxITEM_NORMAL);
+	idlerMenu->AppendSeparator();
+	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::CHAT_REGISTER), "Chat Register", "Register in chat", wxITEM_NORMAL);
+	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::CHAT_CONNECT), "Chat Connect", "Connect to chat", wxITEM_NORMAL);
+	
+	menubar->Append(idlerMenu, "Idler");
+	// Register items for enabling/disabling
+	items[MenuBar::MAP_SUMMARIZE].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::MAP_SUMMARIZE)));
+	items[MenuBar::DOODADS_FILLING_TOOL].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::DOODADS_FILLING_TOOL)));
+	items[MenuBar::EDIT_ITEMS_OTB].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::EDIT_ITEMS_OTB)));
+	items[MenuBar::MONSTER_MAKER].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::MONSTER_MAKER)));
+	items[MenuBar::CHAT_REGISTER].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::CHAT_REGISTER)));
+	items[MenuBar::CHAT_CONNECT].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::CHAT_CONNECT)));
 
 #ifdef __LINUX__
 	const int count = 53;
@@ -756,24 +795,26 @@ void MainMenuBar::OnNew(wxCommandEvent &WXUNUSED(event)) {
 }
 
 void MainMenuBar::OnGenerateMap(wxCommandEvent &WXUNUSED(event)) {
-	/*
-	if(!DoQuerySave()) return;
+	// Check if a map is currently open
+	if (!g_gui.IsEditorOpen()) {
+		wxMessageBox("Please create or open a map first.", "No Map Open",
+		            wxOK | wxICON_WARNING, frame);
+		return;
+	}
 
-	std::ostringstream os;
-	os << "Untitled-" << untitled_counter << ".otbm";
-	++untitled_counter;
+	// Get current editor
+	Editor* editor = g_gui.GetCurrentEditor();
+	ASSERT(editor);
 
-	editor.generateMap(wxstr(os.str()));
-
-	g_gui.SetStatusText("Generated newd map");
-
-	g_gui.UpdateTitle();
-	g_gui.RefreshPalettes();
-	g_gui.UpdateMinimap();
-	g_gui.FitViewToMap();
-	UpdateMenubar();
-	Refresh();
-	*/
+	// Show procedural map generation dialog
+	ProceduralMapDialog dialog(frame, *editor);
+	if (dialog.ShowModal() == wxID_OK) {
+		// Generation already executed in dialog, just refresh UI
+		g_gui.SetStatusText("Procedural map generated successfully");
+		g_gui.RefreshView();
+		g_gui.UpdateMinimap();
+		Update();
+	}
 }
 
 void MainMenuBar::OnOpenRecent(wxCommandEvent &event) {
@@ -791,6 +832,36 @@ void MainMenuBar::OnClose(wxCommandEvent &WXUNUSED(event)) {
 
 void MainMenuBar::OnSave(wxCommandEvent &WXUNUSED(event)) {
 	g_gui.SaveMap();
+}
+
+void MainMenuBar::OnMapSummarize(wxCommandEvent &WXUNUSED(event)) {
+	if (!g_gui.IsEditorOpen()) {
+		wxMessageBox("No map open!", "Error", wxOK | wxICON_ERROR);
+		return;
+	}
+	MapSummaryWindow dialog(frame);
+	dialog.SummarizeMap(g_gui.GetCurrentEditor()->getMap());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnDoodadsFillingTool(wxCommandEvent &WXUNUSED(event)) {
+	wxMessageBox("Doodads Filling Tool - Not implemented yet", "Info", wxOK | wxICON_INFORMATION);
+}
+
+void MainMenuBar::OnEditItemsOTB(wxCommandEvent &WXUNUSED(event)) {
+	wxMessageBox("Edit Items OTB - Not implemented yet", "Info", wxOK | wxICON_INFORMATION);
+}
+
+void MainMenuBar::OnMonsterMaker(wxCommandEvent &WXUNUSED(event)) {
+	wxMessageBox("Monster Maker - Not implemented yet", "Info", wxOK | wxICON_INFORMATION);
+}
+
+void MainMenuBar::OnChatRegister(wxCommandEvent &WXUNUSED(event)) {
+	wxMessageBox("Chat Register - Not implemented yet", "Info", wxOK | wxICON_INFORMATION);
+}
+
+void MainMenuBar::OnChatConnect(wxCommandEvent &WXUNUSED(event)) {
+	wxMessageBox("Chat Connect - Not implemented yet", "Info", wxOK | wxICON_INFORMATION);
 }
 
 void MainMenuBar::OnSaveAs(wxCommandEvent &WXUNUSED(event)) {

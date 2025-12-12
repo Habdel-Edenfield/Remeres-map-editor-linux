@@ -60,6 +60,7 @@ cmake --build . -j$(nproc)
 - ✅ **GTK3 dark theme** fully supported (all dialogs visible)
 - ✅ **Memory safety** validated with valgrind (0 leaks)
 - ✅ **24+ hour uptime** continuous usage tested
+- ✅ **Procedural Map Generation** (Island & Dungeon w/ A* pathfinding, intersections)
 
 ### 📐 Architecture
 
