@@ -117,6 +117,7 @@ target_sources(${PROJECT_NAME}
 	brush.cpp
 	brush_tables.cpp
 	browse_tile_window.cpp
+	border_editor_window.cpp
 	positionctrl.cpp
 	carpet_brush.cpp
 	client_assets.cpp
@@ -165,7 +166,6 @@ target_sources(${PROJECT_NAME}
 	simplex_noise.cpp
 	map_region.cpp
 	map_tab.cpp
-	map_summary_window.cpp
 	map_window.cpp
 	materials.cpp
 	minimap_window.cpp

@@ -20,6 +20,8 @@
 #include "editor.h"
 #include "map.h"
 #include "map_generator.h"
+#include "gui.h"
+#include "map_tab.h"
 
 #include <wx/statbox.h>
 #include <wx/spinctrl.h>
@@ -33,6 +35,7 @@ BEGIN_EVENT_TABLE(ProceduralMapDialog, wxDialog)
 	EVT_BUTTON(wxID_OK, ProceduralMapDialog::OnGenerate)
 	EVT_BUTTON(wxID_CANCEL, ProceduralMapDialog::OnCancel)
 	EVT_BUTTON(wxID_ANY, ProceduralMapDialog::OnRandomizeSeed)
+	EVT_BUTTON(10002, ProceduralMapDialog::OnResetDefaults)
 	EVT_TOGGLEBUTTON(10001, ProceduralMapDialog::OnToggleTransparency)
 END_EVENT_TABLE()
 
@@ -42,7 +45,8 @@ ProceduralMapDialog::ProceduralMapDialog(wxWindow* parent, Editor& editor)
 	  editor(editor) {
 
 	CreateControls();
-	SetDefaults();
+	CreateControls();
+	LoadSettings();
 
 	Fit();
 	Centre();
@@ -283,8 +287,9 @@ wxSizer* ProceduralMapDialog::CreateButtonSection() {
 	wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
 
 	buttonSizer->AddStretchSpacer();
+	buttonSizer->Add(new wxButton(this, 10002, "Reset Defaults"), 0, wxALL, 5);
 	buttonSizer->Add(new wxButton(this, wxID_OK, "Generate"), 0, wxALL, 5);
-	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Cancel"), 0, wxALL, 5);
+	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Close"), 0, wxALL, 5);
 	
 	transparencyBtn = new wxToggleButton(this, 10001, "Transparent");
 	buttonSizer->Add(transparencyBtn, 0, wxALL, 5);
@@ -476,15 +481,20 @@ void ProceduralMapDialog::OnGenerate(wxCommandEvent& event) {
 	}
 	
 	if (success) {
-		wxMessageBox("Map generated successfully!", "Success", wxOK | wxICON_INFORMATION, this);
-		EndModal(wxID_OK);
+		// Silent success - just update the UI
+		g_gui.RefreshView();
+		g_gui.UpdateMinimap();
+		g_gui.SetStatusText("Procedural map generated successfully");
+		
+		// Save settings for next time
+		SaveSettings();
 	} else {
-		wxMessageBox("Map generation was cancelled or failed.", "Cancelled", wxOK | wxICON_WARNING, this);
+		wxMessageBox("Map generation failed.", "Error", wxOK | wxICON_WARNING, this);
 	}
 }
 
 void ProceduralMapDialog::OnCancel(wxCommandEvent& event) {
-	EndModal(wxID_CANCEL);
+	Destroy();
 }
 
 void ProceduralMapDialog::OnRandomizeSeed(wxCommandEvent& event) {
@@ -497,4 +507,103 @@ void ProceduralMapDialog::OnToggleTransparency(wxCommandEvent& event) {
 	} else {
 		SetTransparent(255); // Opaque
 	}
+}
+
+void ProceduralMapDialog::OnResetDefaults(wxCommandEvent& event) {
+	SetDefaults();
+}
+
+void ProceduralMapDialog::LoadSettings() {
+	// Island
+	if(g_settings.getInteger(Config::PROCEDURAL_MAP_WIDTH) > 0)
+		widthCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_MAP_WIDTH));
+	
+	if(g_settings.getInteger(Config::PROCEDURAL_MAP_HEIGHT) > 0)
+		heightCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_MAP_HEIGHT));
+
+	islandSizeSlider->SetValue((int)(g_settings.getFloat(Config::PROCEDURAL_ISLAND_SIZE) * 100));
+	islandSizeLabel->SetLabel(wxString::Format("%.2f", g_settings.getFloat(Config::PROCEDURAL_ISLAND_SIZE)));
+	
+	falloffSlider->SetValue((int)(g_settings.getFloat(Config::PROCEDURAL_ISLAND_FALLOFF) * 10));
+	falloffLabel->SetLabel(wxString::Format("%.1f", g_settings.getFloat(Config::PROCEDURAL_ISLAND_FALLOFF)));
+	
+	thresholdSlider->SetValue((int)(g_settings.getFloat(Config::PROCEDURAL_ISLAND_THRESHOLD) * 50 + 50));
+	thresholdLabel->SetLabel(wxString::Format("%.2f", g_settings.getFloat(Config::PROCEDURAL_ISLAND_THRESHOLD)));
+
+	noiseScaleCtrl->SetValue(wxString::Format("%.3f", g_settings.getFloat(Config::PROCEDURAL_NOISE_SCALE)));
+	octavesCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_NOISE_OCTAVES));
+	persistenceCtrl->SetValue(wxString::Format("%.2f", g_settings.getFloat(Config::PROCEDURAL_NOISE_PERSISTENCE)));
+	lacunarityCtrl->SetValue(wxString::Format("%.2f", g_settings.getFloat(Config::PROCEDURAL_NOISE_LACUNARITY)));
+	
+	enableCleanupCheck->SetValue(g_settings.getInteger(Config::PROCEDURAL_CLEANUP_ENABLED) != 0);
+	minPatchSizeCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_MIN_LAND_PATCH));
+	maxHoleSizeCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_MAX_WATER_HOLE));
+	smoothingPassesCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_SMOOTHING_PASSES));
+	
+	waterIdCtrl->SetValue(wxString::Format("%d", g_settings.getInteger(Config::PROCEDURAL_WATER_ID)));
+	groundIdCtrl->SetValue(wxString::Format("%d", g_settings.getInteger(Config::PROCEDURAL_GROUND_ID)));
+
+	// Dungeon
+	if(g_settings.getInteger(Config::PROCEDURAL_DNG_WIDTH) > 0)
+		dngWidthCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_DNG_WIDTH));
+		
+	if(g_settings.getInteger(Config::PROCEDURAL_DNG_HEIGHT) > 0)
+		dngHeightCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_DNG_HEIGHT));
+		
+	dngWallIdCtrl->SetValue(wxString::Format("%d", g_settings.getInteger(Config::PROCEDURAL_DNG_WALL_ID)));
+	dngFloorIdCtrl->SetValue(wxString::Format("%d", g_settings.getInteger(Config::PROCEDURAL_DNG_FLOOR_ID)));
+	dngRoomCountCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_DNG_ROOM_COUNT));
+	dngMinRoomSizeCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_DNG_MIN_ROOM_SIZE));
+	dngMaxRoomSizeCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_DNG_MAX_ROOM_SIZE));
+	dngCorridorWidthCtrl->SetValue(g_settings.getInteger(Config::PROCEDURAL_DNG_CORRIDOR_WIDTH));
+	dngGenerateCavesCheck->SetValue(g_settings.getInteger(Config::PROCEDURAL_DNG_GENERATE_CAVES) != 0);
+}
+
+void ProceduralMapDialog::SaveSettings() {
+	// Island
+	g_settings.setInteger(Config::PROCEDURAL_MAP_WIDTH, widthCtrl->GetValue());
+	g_settings.setInteger(Config::PROCEDURAL_MAP_HEIGHT, heightCtrl->GetValue());
+	
+	g_settings.setFloat(Config::PROCEDURAL_ISLAND_SIZE, islandSizeSlider->GetValue() / 100.0f);
+	g_settings.setFloat(Config::PROCEDURAL_ISLAND_FALLOFF, falloffSlider->GetValue() / 10.0f);
+	g_settings.setFloat(Config::PROCEDURAL_ISLAND_THRESHOLD, (thresholdSlider->GetValue() - 50) / 50.0f);
+	
+	double scale, persistence, lacunarity;
+	noiseScaleCtrl->GetValue().ToDouble(&scale);
+	persistenceCtrl->GetValue().ToDouble(&persistence);
+	lacunarityCtrl->GetValue().ToDouble(&lacunarity);
+
+	g_settings.setFloat(Config::PROCEDURAL_NOISE_SCALE, (float)scale);
+	g_settings.setInteger(Config::PROCEDURAL_NOISE_OCTAVES, octavesCtrl->GetValue());
+	g_settings.setFloat(Config::PROCEDURAL_NOISE_PERSISTENCE, (float)persistence);
+	g_settings.setFloat(Config::PROCEDURAL_NOISE_LACUNARITY, (float)lacunarity);
+
+	g_settings.setInteger(Config::PROCEDURAL_CLEANUP_ENABLED, enableCleanupCheck->GetValue() ? 1 : 0);
+	g_settings.setInteger(Config::PROCEDURAL_MIN_LAND_PATCH, minPatchSizeCtrl->GetValue());
+	g_settings.setInteger(Config::PROCEDURAL_MAX_WATER_HOLE, maxHoleSizeCtrl->GetValue());
+	g_settings.setInteger(Config::PROCEDURAL_SMOOTHING_PASSES, smoothingPassesCtrl->GetValue());
+	
+	long waterId, groundId;
+	waterIdCtrl->GetValue().ToLong(&waterId);
+	groundIdCtrl->GetValue().ToLong(&groundId);
+	g_settings.setInteger(Config::PROCEDURAL_WATER_ID, (int)waterId);
+	g_settings.setInteger(Config::PROCEDURAL_GROUND_ID, (int)groundId);
+
+	// Dungeon
+	g_settings.setInteger(Config::PROCEDURAL_DNG_WIDTH, dngWidthCtrl->GetValue());
+	g_settings.setInteger(Config::PROCEDURAL_DNG_HEIGHT, dngHeightCtrl->GetValue());
+	
+	long dngWall, dngFloor;
+	dngWallIdCtrl->GetValue().ToLong(&dngWall);
+	dngFloorIdCtrl->GetValue().ToLong(&dngFloor);
+	g_settings.setInteger(Config::PROCEDURAL_DNG_WALL_ID, (int)dngWall);
+	g_settings.setInteger(Config::PROCEDURAL_DNG_FLOOR_ID, (int)dngFloor);
+	
+	g_settings.setInteger(Config::PROCEDURAL_DNG_ROOM_COUNT, dngRoomCountCtrl->GetValue());
+	g_settings.setInteger(Config::PROCEDURAL_DNG_MIN_ROOM_SIZE, dngMinRoomSizeCtrl->GetValue());
+	g_settings.setInteger(Config::PROCEDURAL_DNG_MAX_ROOM_SIZE, dngMaxRoomSizeCtrl->GetValue());
+	g_settings.setInteger(Config::PROCEDURAL_DNG_CORRIDOR_WIDTH, dngCorridorWidthCtrl->GetValue());
+	g_settings.setInteger(Config::PROCEDURAL_DNG_GENERATE_CAVES, dngGenerateCavesCheck->GetValue() ? 1 : 0);
+	
+	g_settings.save();
 }

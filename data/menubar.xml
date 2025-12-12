@@ -172,6 +172,16 @@
         <item name="$Zones Palette" hotkey="Z" action="SELECT_ZONES" help="Select the Zones palette."/>
         <item name="$RAW Palette" hotkey="R" action="SELECT_RAW" help="Select the RAW palette."/>
     </menu>
+    <menu name="$Features">
+        <item name="Map $Summary" action="MAP_SUMMARIZE" help="Show map summary with item counts."/>
+        <item name="$Doodads Filling Tool" action="DOODADS_FILLING_TOOL" help="Fill area with doodads."/>
+        <item name="$Monster Maker" action="MONSTER_MAKER" help="Create monster spawns."/>
+        <item name="Auto $Border Editor" action="BORDER_EDITOR" help="Visual editor for auto-border patterns."/>
+        <separator/>
+        <menu name="$Generate">
+            <item name="$Procedural Map..." action="GENERATE_MAP" help="Generate a procedural map."/>
+        </menu>
+    </menu>
     <!--
     <menu name="$Live">
         <item name="$Host Server" action="LIVE_START" help="Start a live mapping session (as the host)."/>

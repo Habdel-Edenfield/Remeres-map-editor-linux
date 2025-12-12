@@ -26,7 +26,8 @@
 #include "result_window.h"
 #include "find_item_window.h"
 #include "procedural_map_dialog.h"
-#include "map_summary_window.h"
+// #include "map_summary_window.h"
+#include "border_editor_window.h"
 #include "settings.h"
 
 #include "gui.h"
@@ -219,6 +220,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(DOODADS_FILLING_TOOL, wxITEM_NORMAL, OnDoodadsFillingTool);
 	MAKE_ACTION(EDIT_ITEMS_OTB, wxITEM_NORMAL, OnEditItemsOTB);
 	MAKE_ACTION(MONSTER_MAKER, wxITEM_NORMAL, OnMonsterMaker);
+	MAKE_ACTION(BORDER_EDITOR, wxITEM_NORMAL, OnBorderEditor);
 	MAKE_ACTION(CHAT_REGISTER, wxITEM_NORMAL, OnChatRegister);
 	MAKE_ACTION(CHAT_CONNECT, wxITEM_NORMAL, OnChatConnect);
 
@@ -600,26 +602,7 @@ bool MainMenuBar::Load(const FileName &path, wxArrayString &warnings, wxString &
 		}
 	}
 
-	// [IDLER] Inject Idler Menu explicitly
-	// [IDLER] Inject Idler Menu explicitly
-	wxMenu* idlerMenu = newd wxMenu;
-	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::MAP_SUMMARIZE), "Map Summary", "Show map item statistics", wxITEM_NORMAL);
-	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::DOODADS_FILLING_TOOL), "Doodads Filling Tool", "Open doodads filling tool", wxITEM_NORMAL);
-	idlerMenu->AppendSeparator();
-	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::EDIT_ITEMS_OTB), "Edit Items OTB", "Edit OTB item definitions", wxITEM_NORMAL);
-	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::MONSTER_MAKER), "Monster Maker", "Open monster maker", wxITEM_NORMAL);
-	idlerMenu->AppendSeparator();
-	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::CHAT_REGISTER), "Chat Register", "Register in chat", wxITEM_NORMAL);
-	idlerMenu->Append(MAIN_FRAME_MENU + static_cast<int>(MenuBar::CHAT_CONNECT), "Chat Connect", "Connect to chat", wxITEM_NORMAL);
-	
-	menubar->Append(idlerMenu, "Idler");
-	// Register items for enabling/disabling
-	items[MenuBar::MAP_SUMMARIZE].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::MAP_SUMMARIZE)));
-	items[MenuBar::DOODADS_FILLING_TOOL].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::DOODADS_FILLING_TOOL)));
-	items[MenuBar::EDIT_ITEMS_OTB].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::EDIT_ITEMS_OTB)));
-	items[MenuBar::MONSTER_MAKER].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::MONSTER_MAKER)));
-	items[MenuBar::CHAT_REGISTER].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::CHAT_REGISTER)));
-	items[MenuBar::CHAT_CONNECT].push_back(idlerMenu->FindItem(MAIN_FRAME_MENU + static_cast<int>(MenuBar::CHAT_CONNECT)));
+	// [FEATURES] Menu is now handled in menubar.xml
 
 #ifdef __LINUX__
 	const int count = 53;
@@ -807,14 +790,22 @@ void MainMenuBar::OnGenerateMap(wxCommandEvent &WXUNUSED(event)) {
 	ASSERT(editor);
 
 	// Show procedural map generation dialog
-	ProceduralMapDialog dialog(frame, *editor);
-	if (dialog.ShowModal() == wxID_OK) {
-		// Generation already executed in dialog, just refresh UI
-		g_gui.SetStatusText("Procedural map generated successfully");
-		g_gui.RefreshView();
-		g_gui.UpdateMinimap();
-		Update();
+	if (procedural_map_dialog == nullptr) {
+		procedural_map_dialog = new ProceduralMapDialog(frame, *editor);
+		// Clean up pointer when dialog is destroyed
+		procedural_map_dialog->Bind(wxEVT_DESTROY, [this](wxWindowDestroyEvent& event) {
+			if (event.GetEventObject() == procedural_map_dialog) {
+				procedural_map_dialog = nullptr;
+			}
+			event.Skip();
+		});
+		procedural_map_dialog->Show();
+	} else {
+		procedural_map_dialog->Show();
+		procedural_map_dialog->Raise();
+		procedural_map_dialog->SetFocus();
 	}
+		Update();
 }
 
 void MainMenuBar::OnOpenRecent(wxCommandEvent &event) {
@@ -835,13 +826,7 @@ void MainMenuBar::OnSave(wxCommandEvent &WXUNUSED(event)) {
 }
 
 void MainMenuBar::OnMapSummarize(wxCommandEvent &WXUNUSED(event)) {
-	if (!g_gui.IsEditorOpen()) {
-		wxMessageBox("No map open!", "Error", wxOK | wxICON_ERROR);
-		return;
-	}
-	MapSummaryWindow dialog(frame);
-	dialog.SummarizeMap(g_gui.GetCurrentEditor()->getMap());
-	dialog.ShowModal();
+    wxMessageBox("Map Summary is currently disabled - MapSummaryWindow.cpp/h missing.", "Feature Disabled", wxOK | wxICON_INFORMATION);
 }
 
 void MainMenuBar::OnDoodadsFillingTool(wxCommandEvent &WXUNUSED(event)) {
@@ -854,6 +839,16 @@ void MainMenuBar::OnEditItemsOTB(wxCommandEvent &WXUNUSED(event)) {
 
 void MainMenuBar::OnMonsterMaker(wxCommandEvent &WXUNUSED(event)) {
 	wxMessageBox("Monster Maker - Not implemented yet", "Info", wxOK | wxICON_INFORMATION);
+}
+
+void MainMenuBar::OnBorderEditor(wxCommandEvent &WXUNUSED(event)) {
+	if (border_editor_dialog) {
+		border_editor_dialog->Raise();
+		border_editor_dialog->SetFocus();
+	} else {
+		border_editor_dialog = new BorderEditorDialog(g_gui.root, "Auto Border Editor");
+		border_editor_dialog->Show();
+	}
 }
 
 void MainMenuBar::OnChatRegister(wxCommandEvent &WXUNUSED(event)) {

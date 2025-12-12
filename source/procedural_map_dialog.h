@@ -70,6 +70,8 @@ private:
 	IslandConfig GetIslandConfiguration() const;
 	DungeonConfig GetDungeonConfiguration() const;
 	void SetDefaults();
+	void LoadSettings();
+	void SaveSettings();
 
 	// References
 	Editor& editor;
@@ -125,6 +127,7 @@ private:
 	// Controls - Transparency
 	wxToggleButton* transparencyBtn;
 	void OnToggleTransparency(wxCommandEvent& event);
+	void OnResetDefaults(wxCommandEvent& event);
 
 	DECLARE_EVENT_TABLE()
 };

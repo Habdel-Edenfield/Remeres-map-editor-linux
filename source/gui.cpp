@@ -1155,6 +1155,26 @@ void GUI::FinishWelcomeDialog() {
 	if (welcomeDialog != nullptr) {
 		welcomeDialog->Hide();
 		root->Show();
+
+		// Maximize or restore size immediately to prevent "small window -> modal -> maximize" glitch
+		// This ensures the window covers the screen before any map loader errors appear
+		if (g_settings.getInteger(Config::WINDOW_MAXIMIZED)) {
+			root->Maximize();
+		} else {
+			root->SetSize(wxSize(
+				g_settings.getInteger(Config::WINDOW_WIDTH),
+				g_settings.getInteger(Config::WINDOW_HEIGHT)
+			));
+		}
+
+		// Force the window manager to process the Show/Maximize request immediately
+		// This prevents the "modal dialog appears while window is still resizing/hidden" issue
+		wxSafeYield();
+		
+		// Force an immediate repaint to ensure the window is drawn before proceeding
+		root->Refresh();
+		root->Update();
+
 		welcomeDialog->Destroy();
 		welcomeDialog = nullptr;
 	}

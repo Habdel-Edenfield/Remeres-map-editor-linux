@@ -20,6 +20,9 @@
 
 #include <wx/docview.h>
 
+class ProceduralMapDialog;
+class BorderEditorDialog;
+
 namespace MenuBar {
 	struct Action;
 
@@ -172,6 +175,7 @@ namespace MenuBar {
 		DOODADS_FILLING_TOOL,
 		EDIT_ITEMS_OTB,
 		MONSTER_MAKER,
+		BORDER_EDITOR,
 		CHAT_REGISTER,
 		CHAT_CONNECT,
 	};
@@ -324,6 +328,7 @@ public:
 	void OnDoodadsFillingTool(wxCommandEvent &event);
 	void OnEditItemsOTB(wxCommandEvent &event);
 	void OnMonsterMaker(wxCommandEvent &event);
+	void OnBorderEditor(wxCommandEvent &event);
 	void OnChatRegister(wxCommandEvent &event);
 	void OnChatConnect(wxCommandEvent &event);
 
@@ -350,6 +355,9 @@ protected:
 	wxFileHistory recentFiles;
 
 	std::map<std::string, MenuBar::Action*> actions;
+    
+    ProceduralMapDialog* procedural_map_dialog = nullptr;
+    BorderEditorDialog* border_editor_dialog = nullptr;
 
 	DECLARE_EVENT_TABLE();
 };
